@@ -9,7 +9,6 @@ from fastapi import UploadFile, File
 from langchain_community.document_loaders import PyPDFLoader
 import shutil
 
-# New import paths for Day 7 Memory requirements
 from langchain_classic.memory import ConversationBufferMemory
 from langchain_classic.chains import ConversationalRetrievalChain
 
@@ -24,18 +23,18 @@ app = FastAPI()
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
-    # 1. Define the location first
+    # Define the location first
     file_location = f"./data/{file.filename}"
     
-    # 2. Save the file to that location
+    # Save the file to that location
     with open(file_location, "wb+") as file_object:
         shutil.copyfileobj(file.file, file_object)
     
-    # 3. Now the loader can find the file_location
+    # Now the loader can find the file location
     loader = PyPDFLoader(file_location)
     new_docs = loader.load_and_split()
     
-    # 4. Batching logic (to avoid that 429 error from before)
+    # Batching logic (to avoid that 429 error from before)
     batch_size = 3 
     for i in range(0, len(new_docs), batch_size):
         batch = new_docs[i : i + batch_size]
@@ -44,8 +43,7 @@ async def upload_file(file: UploadFile = File(...)):
         
     return {"info": f"File '{file.filename}' processed successfully!"}
 
-# 1. Setup Embeddings & Vector DB
-# Note: Using standard GoogleGenerativeAIEmbeddings for compatibility
+# Setup Embeddings & Vector DB
 embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
 
 vectorstore = Chroma(
@@ -53,20 +51,20 @@ vectorstore = Chroma(
     embedding_function=embeddings
 )
 
-# 2. Setup LLM & Memory
+# Setup LLM & Memory
 llm = ChatGoogleGenerativeAI(
     model="models/gemini-3-flash-preview",
     temperature=0.3
 )
 
-# Day 7 Requirement: Buffer memory for chat history
+# Buffer memory for chat history
 memory = ConversationBufferMemory(
     memory_key="chat_history",
     return_messages=True,
     output_key="answer"
 )
 
-# 3. Create Conversational Retrieval Chain
+#  Create Conversational Retrieval Chain
 # This combines retriever, LLM, and Memory automatically
 rag_chain = ConversationalRetrievalChain.from_llm(
     llm=llm,
@@ -81,7 +79,6 @@ class QueryRequest(BaseModel):
 @app.post("/chat")
 async def chat(request: QueryRequest):
     try:
-        # Day 6 & 7 Implementation: Multi-turn RAG
         result = rag_chain.invoke({"question": request.question})
         
         return {
