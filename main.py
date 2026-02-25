@@ -12,6 +12,8 @@ import shutil
 from langchain_classic.memory import ConversationBufferMemory
 from langchain_classic.chains import ConversationalRetrievalChain
 
+print("APP STARTED")
+
 # Create the data directory automatically if it doesn't exist
 if not os.path.exists("./data"):
     os.makedirs("./data")
@@ -20,6 +22,9 @@ load_dotenv()
 
 app = FastAPI()
 
+@app.get("/")
+def test():
+    return {"status": "working"}
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
