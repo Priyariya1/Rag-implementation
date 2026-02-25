@@ -4,6 +4,7 @@ uvicorn
 langchain
 langchain-community
 langchain-google-genai
+langchain-chroma
 chromadb
 pypdf
 python-dotenv
