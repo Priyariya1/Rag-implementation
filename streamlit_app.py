@@ -3,8 +3,8 @@ import requests
 
 st.set_page_config(page_title="RAG Chatbot", page_icon="🚀")
 
-st.title("🚀 SpaceX & Tesla RAG Assistant")
-st.markdown("Ask questions about Elon Musk's ventures based on our local database.")
+st.title("🚀 RAG Assistant")
+st.markdown("Ask questions about on our local database.")
 
 # SIDEBAR- Document Upload 
 with st.sidebar:
