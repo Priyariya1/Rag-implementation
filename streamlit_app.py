@@ -17,6 +17,7 @@ with st.sidebar:
                 try:
                     files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "application/pdf")}
                     res = requests.post("http://127.0.0.1:8000/upload", files=files)
+                    res = requests.post("https://rag-implementation-hw3i.onrender.com/upload", files=files)
                     
                     if res.status_code == 200:
                         st.success(f" {res.json().get('info')}")
