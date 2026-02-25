@@ -23,7 +23,7 @@ load_dotenv()
 app = FastAPI()
 
 @app.get("/")
-def test():
+def home():
     return {"status": "working"}
 
 @app.post("/upload")
@@ -48,36 +48,63 @@ async def upload_file(file: UploadFile = File(...)):
         
     return {"info": f"File '{file.filename}' processed successfully!"}
 
-# Setup Embeddings & Vector DB
-embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+# # Setup Embeddings & Vector DB
+# embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
 
-vectorstore = Chroma(
-    persist_directory="./chroma_db",
-    embedding_function=embeddings
-)
+# vectorstore = Chroma(
+#     persist_directory="./chroma_db",
+#     embedding_function=embeddings
+# )
 
-# Setup LLM & Memory
-llm = ChatGoogleGenerativeAI(
-    model="models/gemini-3-flash-preview",
-    temperature=0.3
-)
+# # Setup LLM & Memory
+# llm = ChatGoogleGenerativeAI(
+#     model="models/gemini-3-flash-preview",
+#     temperature=0.3
+# )
 
-# Buffer memory for chat history
-memory = ConversationBufferMemory(
-    memory_key="chat_history",
-    return_messages=True,
-    output_key="answer"
-)
+# # Buffer memory for chat history
+# memory = ConversationBufferMemory(
+#     memory_key="chat_history",
+#     return_messages=True,
+#     output_key="answer"
+# )
 
-#  Create Conversational Retrieval Chain
-# This combines retriever, LLM, and Memory automatically
-rag_chain = ConversationalRetrievalChain.from_llm(
-    llm=llm,
-    retriever=vectorstore.as_retriever(),
-    memory=memory,
-    return_source_documents=True
-)
+# #  Create Conversational Retrieval Chain
+# # This combines retriever, LLM, and Memory automatically
+# rag_chain = ConversationalRetrievalChain.from_llm(
+#     llm=llm,
+#     retriever=vectorstore.as_retriever(),
+#     memory=memory,
+#     return_source_documents=True
+# )
 
+def create_rag_chain():
+    embeddings = GoogleGenerativeAIEmbeddings(
+        model="models/gemini-embedding-001"
+    )
+
+    vectorstore = Chroma(
+        persist_directory="./chroma_db",
+        embedding_function=embeddings
+    )
+
+    llm = ChatGoogleGenerativeAI(
+        model="models/gemini-3-flash-preview",
+        temperature=0.3
+    )
+
+    memory = ConversationBufferMemory(
+        memory_key="chat_history",
+        return_messages=True,
+        output_key="answer"
+    )
+
+    return ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=vectorstore.as_retriever(),
+        memory=memory,
+        return_source_documents=True
+    )
 class QueryRequest(BaseModel):
     question: str
 
