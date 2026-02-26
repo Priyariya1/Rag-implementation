@@ -7,18 +7,18 @@ import os
 
 load_dotenv()
 
-# 1️⃣ Load embeddings (Fixed: Using standard LangChain class)
+# Load embeddings (Fixed: Using standard LangChain class)
 embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
 
-# 2️⃣ Load existing vector DB
+# Load existing vector DB
 vectorstore = Chroma(
     persist_directory="./chroma_db",
     embedding_function=embeddings
 )
 
-retriever = vectorstore.as_retriever(search_kwargs={"k": 3}) # Get top 2 most relevant chunks
+retriever = vectorstore.as_retriever(search_kwargs={"k": 3}) # Get top 3 most relevant chunks
 
-# 3️⃣ Initialize LLM
+# Initialize LLM
 llm = ChatGoogleGenerativeAI(
     model="models/gemini-3-flash-preview",
     temperature=0.1 # Lower temperature = more factual/less creative
@@ -40,7 +40,7 @@ Question:
 Detailed Answer:
 """)
 
-# 5️⃣ Execution Logic
+# Execution Logic
 question = "What does SpaceX focus on?"
 
 # Retrieve relevant chunks

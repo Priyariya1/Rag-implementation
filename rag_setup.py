@@ -16,7 +16,7 @@ They are currently developing the Starship spacecraft, a fully reusable system d
 to carry both crew and cargo to the Moon, Mars, and beyond.
 """
 
-# 1️⃣ Split text
+# Split text
 splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000,
     chunk_overlap=20
@@ -26,12 +26,12 @@ chunks = splitter.split_text(text)
 
 docs = [Document(page_content=chunk) for chunk in chunks]
 
-# 2️⃣ Create embeddings
+# Create embeddings
 embeddings = GoogleGenerativeAIEmbeddings(
     model="models/gemini-embedding-001"
 )
 
-# 3️⃣ Store in Chroma
+# Store in Chroma
 vectorstore = Chroma.from_documents(
     documents=docs,
     embedding=embeddings,

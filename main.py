@@ -23,18 +23,18 @@ app = FastAPI()
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
-    # 1. Define the location first
+    # Define the location first
     file_location = f"./data/{file.filename}"
     
-    # 2. Save the file to that location
+    # Save the file to that location
     with open(file_location, "wb+") as file_object:
         shutil.copyfileobj(file.file, file_object)
     
-    # 3. Now the loader can find the file_location
+    # Now the loader can find the file_location
     loader = PyPDFLoader(file_location)
     new_docs = loader.load_and_split()
     
-    # 4. Batching logic (to avoid that 429 error from before)
+    # Batching logic (to avoid that 429 error from before)
     batch_size = 3 
     for i in range(0, len(new_docs), batch_size):
         batch = new_docs[i : i + batch_size]
@@ -80,7 +80,7 @@ class QueryRequest(BaseModel):
 @app.post("/chat")
 async def chat(request: QueryRequest):
     try:
-        # Day 6 & 7 Implementation: Multi-turn RAG
+        # Multi-turn RAG
         result = rag_chain.invoke({"question": request.question})
         
         return {

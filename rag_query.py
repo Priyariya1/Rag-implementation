@@ -20,7 +20,7 @@ retriever = vectorstore.as_retriever()
 
 query = "What does SpaceX focus on?"
 
-# ✅ New way (instead of get_relevant_documents)
+# New way (instead of get relevant documents)
 docs = retriever.invoke(query)
 
 print("Retrieved Documents:\n")
