@@ -1,132 +1,94 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from langchain_chroma import Chroma
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_classic.memory import ConversationBufferMemory
-from langchain_classic.chains import ConversationalRetrievalChain
 from dotenv import load_dotenv
 import os
 import time
+from fastapi import UploadFile, File
+from langchain_community.document_loaders import PyPDFLoader
 import shutil
 
-print("APP STARTED")
+from langchain_classic.memory import ConversationBufferMemory
+from langchain_classic.chains import ConversationalRetrievalChain
+
+# Create the data directory automatically if it doesn't exist
+if not os.path.exists("./data"):
+    os.makedirs("./data")
 
 load_dotenv()
 
 app = FastAPI()
 
-# Ensure data directory exists
-os.makedirs("./data", exist_ok=True)
-os.makedirs("./chroma_db", exist_ok=True)
-
-# GLOBAL OBJECTS
-
-vectorstore = None
-rag_chain = None
-
-# VECTORSTORE INITIALIZER
-
-def get_vectorstore():
-    global vectorstore
-
-    if vectorstore is None:
-        embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/gemini-embedding-001"
-        )
-
-        vectorstore = Chroma(
-            persist_directory="./chroma_db",
-            embedding_function=embeddings
-        )
-
-    return vectorstore
-
-# RAG CHAIN INITIALIZER
-
-def get_rag_chain():
-    global rag_chain
-
-    if rag_chain is None:
-        vs = get_vectorstore()
-
-        llm = ChatGoogleGenerativeAI(
-            model="models/gemini-3-flash-preview",
-            temperature=0.3
-        )
-
-        memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True,
-            output_key="answer"
-        )
-
-        rag_chain = ConversationalRetrievalChain.from_llm(
-            llm=llm,
-            retriever=vs.as_retriever(),
-            memory=memory,
-            return_source_documents=True
-        )
-
-    return rag_chain
-
-
-# HEALTH CHECK
-
-@app.get("/")
-def home():
-    return {"status": "working"}
-
-# FILE UPLOAD
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
-
+    # 1. Define the location first
     file_location = f"./data/{file.filename}"
-
-    # Save file
+    
+    # 2. Save the file to that location
     with open(file_location, "wb+") as file_object:
         shutil.copyfileobj(file.file, file_object)
-
+    
+    # 3. Now the loader can find the file_location
     loader = PyPDFLoader(file_location)
     new_docs = loader.load_and_split()
-
-    vs = get_vectorstore()
-
-    batch_size = 3
+    
+    # 4. Batching logic (to avoid that 429 error from before)
+    batch_size = 3 
     for i in range(0, len(new_docs), batch_size):
-        batch = new_docs[i: i + batch_size]
-        vs.add_documents(batch)
-        time.sleep(5)
-
+        batch = new_docs[i : i + batch_size]
+        vectorstore.add_documents(batch)
+        time.sleep(10)  # Calm down the API calls
+        
     return {"info": f"File '{file.filename}' processed successfully!"}
 
+# Setup Embeddings & Vector DB
+# Using standard GoogleGenerativeAIEmbeddings for compatibility
+embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
 
-# CHAT ENDPOINT
+vectorstore = Chroma(
+    persist_directory="./chroma_db",
+    embedding_function=embeddings
+)
+
+# Setup LLM & Memory
+llm = ChatGoogleGenerativeAI(
+    model="models/gemini-3-flash-preview",
+    temperature=0.3
+)
+
+# Buffer memory for chat history
+memory = ConversationBufferMemory(
+    memory_key="chat_history",
+    return_messages=True,
+    output_key="answer"
+)
+
+# Create Conversational Retrieval Chain
+# This combines retriever, LLM, and Memory automatically
+rag_chain = ConversationalRetrievalChain.from_llm(
+    llm=llm,
+    retriever=vectorstore.as_retriever(),
+    memory=memory,
+    return_source_documents=True
+)
 
 class QueryRequest(BaseModel):
     question: str
 
-
 @app.post("/chat")
 async def chat(request: QueryRequest):
     try:
-        chain = get_rag_chain()
-
-        result = chain.invoke({"question": request.question})
-
+        # Day 6 & 7 Implementation: Multi-turn RAG
+        result = rag_chain.invoke({"question": request.question})
+        
         return {
             "answer": result["answer"],
-            "source_documents": [
-                doc.page_content for doc in result["source_documents"]
-            ]
+            "source_documents": [doc.page_content for doc in result["source_documents"]]
         }
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# LOCAL RUN
 
 if __name__ == "__main__":
     import uvicorn
